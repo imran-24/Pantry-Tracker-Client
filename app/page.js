@@ -103,14 +103,20 @@ export default function Home() {
     await updateInventory();
   };
 
+
+
   const addItemByImage = async () => {
      try {
-       const response = await axios.post(`${process.env.NEXT_API_URL}/ai`, {
-         image: image,
-       });
+       const response = await axios.post(
+         `${process.env.NEXT_PUBLIC_API_URL}/ai`,
+         {
+           image: image,
+         }
+       );
 
-       const json = JSON.parse(response.data);
-       addItem(json.object);
+       console.log(JSON.parse(response.data));
+      //  const json = JSON.parse(response.data);
+      //  addItem(json.object);
      } catch (error) {
        console.error("Error:", error.message); // Handle errors properly
      }
