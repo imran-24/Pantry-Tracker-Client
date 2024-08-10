@@ -1,5 +1,8 @@
 "use client";
 import { db } from "@/firebase";
+import { config } from "dotenv";
+
+config({ path: ".env" });
 
 import { collection, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
 
@@ -102,7 +105,7 @@ export default function Home() {
 
   const addItemByImage = async () => {
      try {
-       const response = await axios.post("http://localhost:5000/ai", {
+       const response = await axios.post(`${process.env.NEXT_API_URL}/ai`, {
          image: image,
        });
 
