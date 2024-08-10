@@ -212,17 +212,6 @@ const CameraPage = ({setOpenCamera, image, setImage, addItemByImage}) => {
         
       )}
         <Control>
-        {/* <select
-          onChange={(event) => {
-            setActiveDeviceId(event.target.value);
-          }}
-        >
-          {devices.map((d) => (
-            <option key={d.deviceId} value={d.deviceId}>
-              {d.label}
-            </option>
-          ))}
-        </select> */}
         <ImagePreview
           image={image}
           onClick={() => {

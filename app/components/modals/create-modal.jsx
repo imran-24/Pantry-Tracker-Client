@@ -9,11 +9,11 @@ import DialogTitle from "@mui/material/DialogTitle";
 import React from "react";
 import PropTypes from 'prop-types';
 
-const CreateDialog = ({open, handleClose, name, setName, addItem }) => {
+const CreateModal = ({open, handleClose, name, setName, quantity, setQuantity, addItem }) => {
   return (
     <React.Fragment>
         <Dialog
-          fullScreen
+          
           open={open}
           onClose={handleClose}
           PaperProps={{
@@ -23,9 +23,8 @@ const CreateDialog = ({open, handleClose, name, setName, addItem }) => {
               const formData = new FormData(event.currentTarget);
               const formJson = Object.fromEntries(formData.entries());
               const value = formJson.name;
-              console.log(value);
-              addItem(name)
-              handleClose();
+              addItem(name, quantity)
+              // handleClose();
             },
           }}
         >
@@ -47,23 +46,38 @@ const CreateDialog = ({open, handleClose, name, setName, addItem }) => {
               fullWidth
               variant="standard"
             />
+            <TextField
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              autoFocus
+              required
+              margin="dense"
+              id="quantity"
+              name="quantity"
+              label="Quantity"
+              type="number"
+              fullWidth
+              variant="standard"
+            />
           </DialogContent>
-          <DialogActions>
-            <Button onClick={handleClose} variant="contained" color="inherit">Cancel</Button>
-            <Button type="submit" variant="contained">Add </Button>
+          <DialogActions >
+            <Button onClick={handleClose} sx={{ textDecoration: "none", textTransform: "capitalize" }}  size="small"  variant="contained" color="inherit">Cancel</Button>
+            <Button type="submit" size="small" sx={{ textDecoration: "none", textTransform: "capitalize" }}  variant="contained">Add </Button>
           </DialogActions>
         </Dialog>
       </React.Fragment>
   )
 }
 
-CreateDialog.propTypes = {
+CreateModal.propTypes = {
     open: PropTypes.bool.isRequired,
     handleOpen: PropTypes.func,
     handleClose: PropTypes.func,
     setName: PropTypes.func,
     addItem: PropTypes.func,
     name : PropTypes.string.isRequired,
+    setQuantity: PropTypes.func,
+    quantity : PropTypes.number.isRequired,
 };
 
-export default CreateDialog
+export default CreateModal

@@ -4,10 +4,10 @@ import { config } from "dotenv";
 
 config({ path: ".env" });
 
-import { collection, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
 
 import React, { useEffect, useState } from "react";
-import CreateDialog from "./components/modals/create-dialog";
+import CreateModal from "./components/modals/create-modal";
 import {
   AppBar,
   Badge,
@@ -61,6 +61,7 @@ export default function Home() {
   const [inventory, setInventory] = useState([]);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [count, setCount] = useState(1);
   const [openCamera, setOpenCamera] = useState(false);
   const [image, setImage] = useState(null);
 
@@ -68,36 +69,39 @@ export default function Home() {
 
   const removeItem = async (item) => {
     // reference of the document
-    const docRef = doc(collection(db, "inventory"), item);
+    const docRef = doc(collection(db, "inventory"), item.toLowerCase());
     // collections within the documents
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
       const { quantity } = docSnap.data();
       if (quantity === 1) {
-        await RemoveDoc(docRef);
+        await deleteDoc(docRef);
       } else {
-        await setDoc(docRef, { quantity: quantity - 1 });
+        await setDoc(docRef, { quantity: Number(quantity) - 1 });
       }
     }
 
     await updateInventory();
   };
 
-  const addItem = async (item) => {
+  const addItem = async (item, digit) => {
     // reference of the document
-    const docRef = doc(collection(db, "inventory"), item);
+    console.log(item.toLowerCase());
+    const docRef = doc(collection(db, "inventory"), item.toLowerCase());
     // collections within the documents
     const docSnap = await getDoc(docRef);
 
     // if there exists collections in the documents
     if (docSnap.exists()) {
       const { quantity } = docSnap.data();
-      await setDoc(docRef, { quantity: quantity + 1 });
+      const increament = Number(digit ? digit : 1);
+      console.log(increament);
+      await setDoc(docRef, { quantity: quantity + increament });
     }
     // if there are no collections if the documents, then add one
     else {
-      await setDoc(docRef, { quantity: 1 });
+      await setDoc(docRef, { quantity: Number(digit ? digit : 1) });
     }
 
     await updateInventory();
@@ -107,6 +111,7 @@ export default function Home() {
 
   const addItemByImage = async () => {
      try {
+      // console.log(image)
        const response = await axios.post(
          `${process.env.NEXT_PUBLIC_API_URL}/ai`,
          {
@@ -115,8 +120,8 @@ export default function Home() {
        );
 
        console.log(JSON.parse(response.data));
-      //  const json = JSON.parse(response.data);
-      //  addItem(json.object);
+       const json = JSON.parse(response.data);
+       addItem(json.object, json.number);
      } catch (error) {
        console.error("Error:", error.message); // Handle errors properly
      }
@@ -171,13 +176,15 @@ export default function Home() {
         overflow: "hidden",
       }}
     >
-      <CreateDialog
+      <CreateModal
         open={open}
         handleClose={handleClose}
         handleOpen={handleOpen}
         setName={(value) => setName(value)}
         name={name}
-        addItem={(value) => addItem(value)}
+        setQuantity={(value) => setCount(value)}
+        quantity={count}
+        addItem={(a, b) => addItem(a, b)}
       />
       <React.Fragment>
         <CssBaseline />
