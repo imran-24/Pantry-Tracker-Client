@@ -4,50 +4,36 @@ import { config } from "dotenv";
 
 config({ path: ".env" });
 
-import { collection, deleteDoc, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  serverTimestamp,
+  setDoc,
+} from "firebase/firestore";
 
 import React, { useEffect, useState } from "react";
 import CreateModal from "./components/modals/create-modal";
 import {
   AppBar,
-  Badge,
   Box,
-  Button,
-  ButtonGroup,
-  Chip,
   CircularProgress,
   CssBaseline,
   Fab,
+  Grid,
   List,
-  ListItem,
-  ListItemText,
   Paper,
   Toolbar,
   Typography,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
-import RemoveIcon from "@mui/icons-material/Remove";
-import IconButton from "@mui/material/IconButton";
 import CameraIcon from "@mui/icons-material/Camera";
 import CameraPage from "./components/camera";
 import axios from "axios";
-
-const style = {
-  position: "absolute",
-  top: "50%",
-  left: "50%",
-  transform: "translate(-50%, -50%)",
-  display: "flex",
-  flexDirection: "column",
-  border: "none",
-  width: 400,
-  bgcolor: "black",
-  gap: 3,
-  boxShadow: 24,
-  p: 4,
-  color: "white",
-};
+import InventoryCard from "./components/inventory-card";
 
 const StyledFab = styled(Fab)({
   position: "absolute",
@@ -57,17 +43,25 @@ const StyledFab = styled(Fab)({
   right: 0,
   margin: "0 auto",
 });
+
+const CameraFab = styled(Fab)({
+  position: "absolute",
+  zIndex: 1,
+  top: 14,
+  right: 10,
+});
+
 export default function Home() {
   const [inventory, setInventory] = useState([]);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [title, setTitle] = useState("");
   const [count, setCount] = useState(1);
   const [openCamera, setOpenCamera] = useState(false);
   const [image, setImage] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  
-
-  const removeItem = async (item) => {
+  const removeItem = async (item, digit) => {
     // reference of the document
     const docRef = doc(collection(db, "inventory"), item.toLowerCase());
     // collections within the documents
@@ -75,10 +69,13 @@ export default function Home() {
 
     if (docSnap.exists()) {
       const { quantity } = docSnap.data();
-      if (quantity === 1) {
+      if (quantity === 1 || quantity < digit || quantity === digit) {
         await deleteDoc(docRef);
       } else {
-        await setDoc(docRef, { quantity: Number(quantity) - 1 });
+        await setDoc(docRef, {
+          quantity: Number(quantity) - digit,
+          updatedAt: serverTimestamp(),
+        });
       }
     }
 
@@ -87,7 +84,6 @@ export default function Home() {
 
   const addItem = async (item, digit) => {
     // reference of the document
-    console.log(item.toLowerCase());
     const docRef = doc(collection(db, "inventory"), item.toLowerCase());
     // collections within the documents
     const docSnap = await getDoc(docRef);
@@ -96,42 +92,47 @@ export default function Home() {
     if (docSnap.exists()) {
       const { quantity } = docSnap.data();
       const increament = Number(digit ? digit : 1);
-      console.log(increament);
-      await setDoc(docRef, { quantity: quantity + increament });
+      await setDoc(docRef, {
+        quantity: quantity + increament,
+        updatedAt: serverTimestamp(),
+      });
     }
     // if there are no collections if the documents, then add one
     else {
-      await setDoc(docRef, { quantity: Number(digit ? digit : 1) });
+      await setDoc(docRef, {
+        quantity: Number(digit ? digit : 1),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
     }
 
     await updateInventory();
   };
 
-
-
   const addItemByImage = async () => {
-     try {
+    try {
       // console.log(image)
-       const response = await axios.post(
-         `${process.env.NEXT_PUBLIC_API_URL}/ai`,
-         {
-           image: image,
-         }
-       );
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/ai`,
+        {
+          image: image,
+        }
+      );
 
-       console.log(JSON.parse(response.data));
-       const json = JSON.parse(response.data);
-       addItem(json.object, json.number);
-     } catch (error) {
-       console.error("Error:", error.message); // Handle errors properly
-     }
-
+      console.log(JSON.parse(response.data));
+      const json = JSON.parse(response.data);
+      addItem(json.object, json.number);
+    } catch (error) {
+      console.error("Error:", error.message); // Handle errors properly
+    }
   };
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
   const updateInventory = async () => {
+    setLoading(true);
+
     let inventoryList = [];
     const querySnapshot = await getDocs(collection(db, "inventory"));
     querySnapshot.forEach((doc) => {
@@ -141,7 +142,23 @@ export default function Home() {
         ...doc.data(),
       });
     });
+
+    // const list = [];
+    // const q = query(collection(db, "inventory"), orderBy("updatedAt"));
+    // onSnapshot(q, (snapshot) => {
+    //   snapshot.forEach((doc) => {
+    //     if (doc.data()) {
+    //       list.push({
+    //         id: doc.id,
+    //         name: doc.id,
+    //         ...doc.data(),
+    //       });
+    //     }
+    //   });
+    // });
+    // console.log(list);
     setInventory(inventoryList);
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -179,12 +196,13 @@ export default function Home() {
       <CreateModal
         open={open}
         handleClose={handleClose}
-        handleOpen={handleOpen}
+        title={title}
         setName={(value) => setName(value)}
         name={name}
         setQuantity={(value) => setCount(value)}
         quantity={count}
         addItem={(a, b) => addItem(a, b)}
+        removeItem={(a, b) => removeItem(a, b)}
       />
       <React.Fragment>
         <CssBaseline />
@@ -199,23 +217,37 @@ export default function Home() {
             justifyContent: "center",
             justifyItems: "center",
             overflow: "hidden",
+            backgroundColor: "rgb(241 245 249)",
           }}
         >
           <Box
             display={"flex"}
             justifyContent={"space-between"}
             justifyItems={"center"}
-            sx={{ p: 2, pb: 0 }}
+            maxWidth={"90vw"}
+            paddingX={1}
+            minWidth={"90vw"}
+            paddingY={2}
+            position={"relative"}
+            margin={"auto"}
           >
             <Typography variant="h5" gutterBottom component="div">
-              Inbox
+              Inventory
             </Typography>
-            <IconButton onClick={() => setOpenCamera(true)}>
-              <CameraIcon />
-            </IconButton>
+            <CameraFab
+              size="small"
+              onClick={() => {
+                setOpen(true);
+                setTitle("Add");
+              }}
+              color="primary"
+              aria-label="add"
+            >
+              <AddIcon />
+            </CameraFab>
           </Box>
           <List sx={{ height: "100%", overflowY: "auto" }}>
-            {!inventory.length ? (
+            {loading ? (
               <Box
                 height="100%"
                 sx={{
@@ -227,53 +259,29 @@ export default function Home() {
                 <CircularProgress />
               </Box>
             ) : (
-              inventory.map(({ id, name, quantity }) => (
-                <ListItem
-                  key={id}
-                  secondaryAction={
-                    <ButtonGroup>
-                      <Button
-                        size="small"
-                        aria-label="reduce"
-                        onClick={() => {
-                          removeItem(name);
-                        }}
-                      >
-                        <RemoveIcon fontSize="small" />
-                      </Button>
-                      <Button
-                        size="small"
-                        aria-label="increase"
-                        onClick={() => {
-                          addItem(name);
-                        }}
-                      >
-                        <AddIcon fontSize="small" />
-                      </Button>
-                    </ButtonGroup>
-                  }
-                >
-                  {/* <ListItemAvatar>
-                    <Avatar>
-                      <FolderIcon />
-                    </Avatar>
-                  </ListItemAvatar> */}
-                  <Badge color="secondary" badgeContent={quantity}>
-                    {/* <ListItemText
-                      primary={name.charAt(0).toUpperCase() + name.slice(1)}
-                      secondary={quantity ? quantity : 0}
-                    /> */}
-                    <Chip
-                      label={name.charAt(0).toUpperCase() + name.slice(1)}
-                      onClick={() => {}}
+              <Grid
+                maxWidth={"90vw"}
+                marginX={"auto"}
+                container
+                // gap={1}
+                spacing={1}
+                paddingBottom={1}
+                paddingRight={1}
+              >
+                {inventory.map(({ name, quantity }, index) => (
+                  <Grid item key={index} xs={12} sm={6} md={6} lg={3} xl={3}>
+                    <InventoryCard
+                      count={quantity}
+                      serial={index + 1}
+                      name={name}
+                      setName={(value) => setName(value)}
+                      setCount={(value) => setCount(value)}
+                      onOpen={handleOpen}
+                      setTitle={(value) => setTitle(value)}
                     />
-                  </Badge>
-
-                  {/* <Typography>
-                    {name}
-                  </Typography> */}
-                </ListItem>
-              ))
+                  </Grid>
+                ))}
+              </Grid>
             )}
           </List>
           <AppBar
@@ -282,24 +290,15 @@ export default function Home() {
             sx={{ top: "auto", bottom: 0, height: "50px" }}
           >
             <Toolbar>
-              {/* <IconButton color="inherit" aria-label="open drawer">
-              <MenuIcon />
-            </IconButton> */}
               <StyledFab
                 size="small"
-                onClick={handleOpen}
+                onClick={() => setOpenCamera(true)}
                 color="secondary"
                 aria-label="add"
               >
-                <AddIcon />
+                <CameraIcon />
               </StyledFab>
               <Box sx={{ flexGrow: 1 }} />
-              {/* <IconButton color="inherit">
-              <SearchIcon />
-            </IconButton>
-            <IconButton color="inherit">
-              <MoreIcon />
-            </IconButton> */}
             </Toolbar>
           </AppBar>
         </Paper>

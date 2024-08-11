@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, IconButton, Typography } from "@mui/material";
+import { Box, Fab, IconButton, Typography } from "@mui/material";
 import React, { useEffect, useRef, useState } from "react";
 import {Camera} from "react-camera-pro";
 import styled from "styled-components";
@@ -146,6 +146,17 @@ const FullScreenImagePreview = styled.div`
   background-repeat: no-repeat;
   background-position: center;
 `;
+
+const IconFab = styled(Fab)({
+  position: "absolute",
+  zIndex: 999,
+  bottom: 14,
+  right: 14,
+  display: 'flex',
+  alignItems: "center",
+  justifyContent: "center"
+});
+
 const CameraPage = ({setOpenCamera, image, setImage, addItemByImage}) => {
     const [numberOfCameras, setNumberOfCameras] = useState(0);
     const [showImage, setShowImage] = useState(false);
@@ -176,13 +187,17 @@ const CameraPage = ({setOpenCamera, image, setImage, addItemByImage}) => {
                 <CloseIcon color="warning" />
             </IconButton>
             
-            <IconButton  onClick={() => {
+            <IconFab  
+            color="primary"
+            size="small"
+            aria-label="add"
+            onClick={() => {
               addItemByImage()
               setShowImage(false)
               setOpenCamera()
-            }} sx={{ zIndex: 200, position: "absolute", right: 0, bottom: 0}} >
-                <SendIcon fontSize="large"  color="secondary" />
-            </IconButton>
+            }} >
+                <SendIcon sx={{ marginLeft: .7}} fontSize="small"  />
+            </IconFab>
         </Box>
       ) : (
         <Box>
@@ -203,11 +218,14 @@ const CameraPage = ({setOpenCamera, image, setImage, addItemByImage}) => {
                 console.log('Video feed ready.');
             }}
             />
-            <IconButton  onClick={() => { 
+            <IconFab  onClick={() => { 
               setOpenCamera(false);
-              }} sx={{ zIndex: 999, position: "fixed", left: 0, top: 0}} >
-                <ArrowBackIcon color="secondary" />
-            </IconButton>
+              }} 
+              size="small"
+              color="inherit"
+              sx={{ zIndex: 999, position: "fixed", left: 6, top: 6}} >
+                <ArrowBackIcon fontSize="small"   />
+            </IconFab>
         </Box>
         
       )}

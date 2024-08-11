@@ -9,7 +9,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import React from "react";
 import PropTypes from 'prop-types';
 
-const CreateModal = ({open, handleClose, name, setName, quantity, setQuantity, addItem }) => {
+const CreateModal = ({title, open, handleClose, name, setName, quantity, setQuantity, addItem, removeItem }) => {
   return (
     <React.Fragment>
         <Dialog
@@ -23,15 +23,20 @@ const CreateModal = ({open, handleClose, name, setName, quantity, setQuantity, a
               const formData = new FormData(event.currentTarget);
               const formJson = Object.fromEntries(formData.entries());
               const value = formJson.name;
-              addItem(name, quantity)
+              if(title === "Add"){
+                addItem(name, quantity)
+              }
+              if(title === 'Remove'){
+                removeItem(name, quantity)
+              }
               // handleClose();
             },
           }}
         >
-          <DialogTitle>Add Item</DialogTitle>
+          <DialogTitle>{title} Item</DialogTitle>
           <DialogContent >
             <DialogContentText>
-              Add new items to your inventory
+              {title} items to your inventory
             </DialogContentText>
             <TextField
               value={name}
@@ -62,7 +67,7 @@ const CreateModal = ({open, handleClose, name, setName, quantity, setQuantity, a
           </DialogContent>
           <DialogActions >
             <Button onClick={handleClose} sx={{ textDecoration: "none", textTransform: "capitalize" }}  size="small"  variant="contained" color="inherit">Cancel</Button>
-            <Button type="submit" size="small" sx={{ textDecoration: "none", textTransform: "capitalize" }}  variant="contained">Add </Button>
+            <Button type="submit" size="small" sx={{ textDecoration: "none", textTransform: "capitalize" }} color={title === "Remove" ? "error" : "primary"}  variant="contained">{title} </Button>
           </DialogActions>
         </Dialog>
       </React.Fragment>
@@ -71,11 +76,12 @@ const CreateModal = ({open, handleClose, name, setName, quantity, setQuantity, a
 
 CreateModal.propTypes = {
     open: PropTypes.bool.isRequired,
-    handleOpen: PropTypes.func,
     handleClose: PropTypes.func,
     setName: PropTypes.func,
     addItem: PropTypes.func,
+    removeItem: PropTypes.func,
     name : PropTypes.string.isRequired,
+    title : PropTypes.string.isRequired,
     setQuantity: PropTypes.func,
     quantity : PropTypes.number.isRequired,
 };
